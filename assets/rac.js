@@ -205,7 +205,7 @@
 
   var SLIDES = [
     {
-      img: 'assets/img/p-cooker-steel-cut.png',
+      img: 'assets/img/p-cooker-steel-cut.webp',
       ghost: { en: 'GAS', ar: 'الغاز' },
       tag: { en: 'Cooking', ar: 'الطهي' },
       name: { en: ['Ninety centimetres', 'of <em>kitchen</em>.'], ar: ['تسعون سنتيمتراً', 'من <em>المطبخ</em>.'] },
@@ -219,7 +219,7 @@
       }
     },
     {
-      img: 'assets/img/p-dispenser-top-cut.png',
+      img: 'assets/img/p-dispenser-top-cut.webp',
       ghost: { en: 'WATER', ar: 'المياه' },
       tag: { en: 'Water dispensers', ar: 'برادات مياه' },
       name: { en: ['Top load.', 'Zero <em>callbacks</em>.'], ar: ['تعبئة علوية.', 'بلا <em>شكاوى</em>.'] },
@@ -233,7 +233,7 @@
       }
     },
     {
-      img: 'assets/img/p-tv-qled-cut.png',
+      img: 'assets/img/p-tv-qled-cut.webp',
       ghost: { en: 'VISION', ar: 'الشاشة' },
       tag: { en: 'Television', ar: 'التلفزيونات' },
       name: { en: ['QLED, all the', 'way up to <em>65</em>.'], ar: ['QLED حتى', 'مقاس <em>65</em> إنش.'] },
@@ -247,7 +247,7 @@
       }
     },
     {
-      img: 'assets/img/p-oven-black-cut.png',
+      img: 'assets/img/p-oven-black-cut.webp',
       ghost: { en: 'BUILT-IN', ar: 'مدمج' },
       tag: { en: 'Built-in ovens', ar: 'أفران مدمجة' },
       name: { en: ['Black glass,', 'front and <em>centre</em>.'], ar: ['زجاج أسود', 'في <em>الواجهة</em>.'] },
@@ -261,7 +261,7 @@
       }
     },
     {
-      img: 'assets/img/p-vacuum-cut.png',
+      img: 'assets/img/p-vacuum-cut.webp',
       ghost: { en: 'SMALL', ar: 'الصغيرة' },
       tag: { en: 'Small appliances', ar: 'أجهزة صغيرة' },
       name: { en: ['The second-', 'fastest <em>seller</em>.'], ar: ['ثاني أسرع', '<em>مبيعاً</em>.'] },
@@ -275,7 +275,7 @@
       }
     },
     {
-      img: 'assets/img/p-fridge-4door-cut.png',
+      img: 'assets/img/p-fridge-4door-cut.webp',
       ghost: { en: 'COLD', ar: 'التبريد' },
       tag: { en: 'Refrigeration', ar: 'التبريد' },
       name: { en: ['Four doors.', 'One <em>statement</em>.'], ar: ['أربعة أبواب.', '<em>حضور</em> واحد.'] },
@@ -411,6 +411,9 @@
 
     /* -- pointer: parallax on the picture, drift on the thumbnails -- */
     var raf = null, tx = 0, ty = 0, cx = 0, cy = 0;
+    /* the thumbnails mirror with the layout in Arabic, so their horizontal
+       drift has to mirror too or it pulls the wrong way */
+    function rtlX() { return document.documentElement.dir === "rtl" ? -1 : 1; }
     function loop() {
       cx += (tx - cx) * .08;
       cy += (ty - cy) * .08;
@@ -425,7 +428,9 @@
       var nx = (e.clientX - r.left) / r.width - .5;
       var ny = (e.clientY - r.top) / r.height - .5;
 
-      tx = nx * -46; ty = ny * -30;
+      /* positive: the cluster follows the pointer. Each thumbnail scales it
+         by its own --d, so the nearer ones travel further. */
+      tx = nx * 96 * rtlX(); ty = ny * 62;
       if (!raf) raf = requestAnimationFrame(loop);
 
       var cols = els[i] && els[i].querySelector('.cols');

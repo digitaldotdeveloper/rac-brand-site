@@ -1,2 +1,6 @@
 # Internal build notes — names the parent company, must not be published.
 README.md
+
+# PNG masters: superseded by the .webp the site actually serves. Kept on disk
+# (re-encode from these, never from a .webp) but out of the deploy.
+assets/img/_src/
