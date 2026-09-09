@@ -245,7 +245,11 @@ body.menu-open .burger span::after{top:0;transform:rotate(-45deg)}
 /* centred in the band between the fixed header and the arrow strip, not in the
    whole hero — otherwise the tag slides under the logo on a laptop screen */
 .ed{position:absolute;z-index:6;inset-inline-start:0;top:calc(50% + var(--hdrh) / 2 - var(--navh) / 2);transform:translateY(-50%);width:100%}
-.ed__in{max-width:min(43ch,42vw)}
+/* The card is full width but its content is a narrow column, so the empty half
+   was lying over the picture and swallowing every hover on it. Only the column
+   itself is a hit target; text inside it still selects normally. */
+.ed{pointer-events:none}
+.ed__in{pointer-events:auto;max-width:min(43ch,42vw)}
 .ed__tag{
   display:inline-flex;align-items:center;gap:.7rem;margin-bottom:1.4rem;
   font-family:var(--f-mono);font-size:.66rem;letter-spacing:.26em;text-transform:uppercase;color:var(--brass);
@@ -297,6 +301,11 @@ body.menu-open .burger span::after{top:0;transform:rotate(-45deg)}
 }
 .thumbs.is-tracking .thumb{
   transition:width .95s var(--e),box-shadow .5s,opacity .6s;
+  /* A chip rides directly under the cursor, so leaving them hit-testable puts a
+     pointer hand over the whole picture, flickers :hover between chips as they
+     swap places underneath, and swallows drag-to-swipe. While they are trailing
+     they are decoration; they become targets again once they dock. */
+  pointer-events:none;
 }
 .thumb::after{
   content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 1px var(--line-2);
@@ -347,7 +356,8 @@ body.menu-open .burger span::after{top:0;transform:rotate(-45deg)}
 [dir=rtl] .count i::after{transform-origin:right}
 body.is-paused .count i::after{animation-play-state:paused}
 @keyframes railfill{to{transform:scaleX(1)}}
-.hero.is-dragging{cursor:grabbing}
+.cols{cursor:grab}
+.hero.is-dragging,.hero.is-dragging .cols{cursor:grabbing}
 
 /* ---------- the hero in light ----------
    The slider art is cut out on alpha, so the stage needs no plate and no scrim
