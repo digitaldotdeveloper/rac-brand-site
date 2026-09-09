@@ -409,40 +409,93 @@
       if (window.scrollY > 60) dock(true);
     }, { passive: true });
 
-    /* -- pointer: parallax on the picture, drift on the thumbnails -- */
-    var raf = null, tx = 0, ty = 0, cx = 0, cy = 0;
-    /* the thumbnails mirror with the layout in Arabic, so their horizontal
-       drift has to mirror too or it pulls the wrong way */
-    function rtlX() { return document.documentElement.dir === "rtl" ? -1 : 1; }
-    function loop() {
-      cx += (tx - cx) * .08;
-      cy += (ty - cy) * .08;
-      if (thumbs) {
-        thumbs.style.setProperty('--mx', cx.toFixed(2));
-        thumbs.style.setProperty('--my', cy.toFixed(2));
-      }
-      raf = (Math.abs(tx - cx) > .1 || Math.abs(ty - cy) > .1) ? requestAnimationFrame(loop) : null;
+    /* -- pointer: parallax on the picture, a trail on the thumbnails -------
+       The thumbnails ride a short history of the pointer: thumbnail n reads
+       the position n*STRIDE frames ago, so they string out behind the cursor
+       rather than all landing on it. Each keeps its scattered spot as the rest
+       position it returns to. Docked, the trail is off — a dock you are meant
+       to pick from has to hold still. */
+    var raf = null, tracking = false, hasPointer = false;
+    var STRIDE = 5, HIST = 64;
+    var hx = new Float32Array(HIST), hy = new Float32Array(HIST), head = 0, filled = false;
+    var ptx = 0, pty = 0, tpx = 0, tpy = 0;
+    var fine = window.matchMedia('(hover:hover) and (pointer:fine)');
+
+    function rtlX() { return document.documentElement.dir === 'rtl' ? -1 : 1; }
+
+    /* rest position of a chip in hero pixels, read straight off its CSS vars,
+       mirrored in Arabic, where the chips are placed with a logical inset */
+    function restOf(el, W, H, w) {
+      var cs = getComputedStyle(el);
+      var fx = parseFloat(cs.getPropertyValue('--fx')) || 0;
+      var fy = parseFloat(cs.getPropertyValue('--fy')) || 0;
+      var x = W * fx / 100;
+      return { x: rtlX() < 0 ? W - x - w : x, y: H * fy / 100 };
     }
+
+    function loop() {
+      raf = null;
+      if (!tracking || !thumbs) return;
+      ptx += (tpx - ptx) * .3;
+      pty += (tpy - pty) * .3;
+      hx[head] = ptx; hy[head] = pty;
+      head = (head + 1) % HIST;
+      if (head === 0) filled = true;
+
+      var r = host.getBoundingClientRect();
+      var chips = thumbs.querySelectorAll('.thumb');
+      for (var n = 0; n < chips.length; n++) {
+        var el = chips[n];
+        var back = n * STRIDE;
+        var s = (head - 1 - back + HIST * 2) % HIST;
+        if (!filled && back >= head) s = 0;
+        var w = el.offsetWidth, h = el.offsetHeight;
+        var rest = restOf(el, r.width, r.height, w);
+        el.style.setProperty('--tx', (hx[s] - w / 2 - rest.x).toFixed(1) + 'px');
+        el.style.setProperty('--ty', (hy[s] - h / 2 - rest.y).toFixed(1) + 'px');
+      }
+      raf = requestAnimationFrame(loop);
+    }
+
+    function track(on) {
+      if (on === tracking || !thumbs) return;
+      tracking = on;
+      thumbs.classList.toggle('is-tracking', on);
+      if (on) { if (!raf) raf = requestAnimationFrame(loop); return; }
+      /* let the CSS transition carry them home rather than snapping */
+      var chips = thumbs.querySelectorAll('.thumb');
+      for (var n = 0; n < chips.length; n++) {
+        chips[n].style.setProperty('--tx', '0px');
+        chips[n].style.setProperty('--ty', '0px');
+      }
+    }
+
     host.addEventListener('pointermove', function (e) {
       var r = host.getBoundingClientRect();
       var nx = (e.clientX - r.left) / r.width - .5;
       var ny = (e.clientY - r.top) / r.height - .5;
 
-      /* positive: the cluster follows the pointer. Each thumbnail scales it
-         by its own --d, so the nearer ones travel further. */
-      tx = nx * 96 * rtlX(); ty = ny * 62;
-      if (!raf) raf = requestAnimationFrame(loop);
-
       var cols = els[i] && els[i].querySelector('.cols');
       if (cols) {
-        cols.style.setProperty('--px', (nx * -20).toFixed(1) + 'px');
-        cols.style.setProperty('--py', (ny * -12).toFixed(1) + 'px');
+        /* whole pixels only: each column is clipped, so it rasterises on its
+           own, and a fractional offset resamples them independently — which
+           shows up as pale hairlines along every slice boundary */
+        cols.style.setProperty('--px', Math.round(nx * -20) + 'px');
+        cols.style.setProperty('--py', Math.round(ny * -12) + 'px');
       }
+
       if (window.scrollY <= 60) dock(ny > .22);
+
+      if (e.pointerType === 'touch' || docked || !fine.matches) { track(false); return; }
+      var lx = e.clientX - r.left, ly = e.clientY - r.top;
+      if (!hasPointer) { hasPointer = true; tpx = ptx = lx; tpy = pty = ly; }
+      else { tpx = lx; tpy = ly; }
+      track(true);
     });
+
     host.addEventListener('pointerleave', function () {
-      tx = 0; ty = 0;
-      if (!raf) raf = requestAnimationFrame(loop);
+      hasPointer = false;
+      track(false);
       if (window.scrollY <= 60) dock(false);
       x0 = null; host.classList.remove('is-dragging');
     });

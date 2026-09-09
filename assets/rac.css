@@ -213,7 +213,7 @@ body.menu-open .burger span::after{top:0;transform:rotate(-45deg)}
 .slide.is-on .col{
   /* -1px sideways: clipping exactly on the box edge rasterises to a hairline
      gap between columns, which the cut-out art shows as light seams */
-  clip-path:inset(0 -1px 0 -1px);
+  clip-path:inset(0 -2px 0 -2px);
   transition:clip-path 1.05s var(--e-io);
   transition-delay:calc(var(--i) * 65ms);
 }
@@ -288,12 +288,15 @@ body.menu-open .burger span::after{top:0;transform:rotate(-45deg)}
   position:absolute;pointer-events:auto;cursor:pointer;
   width:clamp(66px,6.4vw,102px);aspect-ratio:3/4;overflow:hidden;border-radius:3px;
   inset-inline-start:calc(var(--fx) * 1%);top:calc(var(--fy) * 1%);
-  transform:translate3d(calc(var(--mx,0) * var(--d) * 1px),calc(var(--my,0) * var(--d) * 1px),0) rotate(calc(var(--rot) * 1deg));
+  transform:translate3d(var(--tx,0px),var(--ty,0px),0) rotate(calc(var(--rot) * 1deg));
   background:var(--panel);
   box-shadow:0 14px 30px -14px rgba(0,0,0,.45);
   transition:left .95s var(--e),top .95s var(--e),width .95s var(--e),
              transform .9s cubic-bezier(.16,1,.3,1),box-shadow .5s,opacity .6s;
   opacity:1;
+}
+.thumbs.is-tracking .thumb{
+  transition:width .95s var(--e),box-shadow .5s,opacity .6s;
 }
 .thumb::after{
   content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 1px var(--line-2);
@@ -314,7 +317,8 @@ body.menu-open .burger span::after{top:0;transform:rotate(-45deg)}
 /* docked: the drift is switched off and they line up as a control strip */
 /* animating top->bottom would jump, so the dock is a --dy stop on the same axis */
 .thumbs.docked .thumb{
-  --d:0;--rot:0;
+  --d:0;--tx:0px;--ty:0px;
+  transform:translate3d(0,0,0) rotate(0deg);
   inset-inline-start:calc(var(--dx) * 1%);
   top:calc(var(--dy) * 1%);
   width:clamp(52px,4.6vw,74px);
