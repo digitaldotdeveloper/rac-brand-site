@@ -290,6 +290,10 @@ body.menu-open .burger span::after{top:0;transform:rotate(-45deg)}
 .thumbs{position:absolute;inset:0;z-index:7;pointer-events:none}
 .thumb{
   position:absolute;pointer-events:auto;cursor:pointer;
+  /* the trailing cluster overlaps, so the chips need a settled order: --d, the
+     same depth that sets how hard each one chases the cursor. Docked they no
+     longer touch, so the order stops mattering rather than needing undoing. */
+  z-index:var(--z,1);
   width:clamp(66px,6.4vw,102px);aspect-ratio:3/4;overflow:hidden;border-radius:3px;
   inset-inline-start:calc(var(--fx) * 1%);top:calc(var(--fy) * 1%);
   transform:translate3d(var(--tx,0px),var(--ty,0px),0) rotate(calc(var(--rot) * 1deg));
@@ -314,7 +318,10 @@ body.menu-open .burger span::after{top:0;transform:rotate(-45deg)}
 .thumb img{width:100%;height:100%;object-fit:contain;padding:9%;transition:transform .8s var(--e)}
 .thumb:hover{box-shadow:0 20px 42px -14px rgba(0,0,0,.55)}
 .thumb:hover img{transform:scale(1.08)}
-.thumb.on{box-shadow:0 20px 42px -14px rgba(0,0,0,.55)}
+/* the chip for the slide on screen sits in front of the stack: a brass edge is
+   no use as a marker if a neighbour is lying over it. It only changes when the
+   slide does, so it is not something the cursor can make flicker. */
+.thumb.on{box-shadow:0 20px 42px -14px rgba(0,0,0,.55);z-index:200}
 .thumb.on::after{box-shadow:inset 0 0 0 1px var(--brass)}
 .thumb__n{
   position:absolute;inset-inline-start:6px;bottom:4px;z-index:2;

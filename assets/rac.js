@@ -336,7 +336,12 @@
         '<div class="thumbs">' + SLIDES.map(function (s, n) {
           var f = FLOAT[n % FLOAT.length];
           return '<button class="thumb" data-go="' + n + '" aria-label="' + L(s.tag) + '" ' +
-            'style="--fx:' + f.fx + ';--fy:' + f.fy + ';--d:' + f.d + ';--rot:' + f.rot +
+            /* --d already says how hard this chip chases the cursor; it names
+               its place in the stack too, so a chip that leads the set is also
+               the one in front of it. Fixed per chip, so an overlapping cluster
+               never reshuffles under the cursor and flickers. */
+            'style="--fx:' + f.fx + ';--fy:' + f.fy + ';--d:' + f.d +
+            ';--z:' + Math.round(f.d * 100) + ';--rot:' + f.rot +
             ';--dx:' + (40 + n * 9.2) + ';--dy:76">' +
             '<img src="' + s.img + '" alt="" draggable="false">' +
             '<span class="thumb__n">' + ('0' + (n + 1)).slice(-2) + '</span>' +
@@ -422,13 +427,14 @@
     /* The set holds this shape around the cursor, in chip widths and heights.
        Keeping a share of each chip's scattered rest position instead — which is
        what SPREAD used to do — collapses the moment the scatter is tight or the
-       cursor slows, and six chips heap into one pile. Columns sit 1.08w apart
-       and rows 1.05h — just clear of touching at any chip size, so the six read
-       as one cluster rather than a spread-out set; the stagger and each chip's
-       own --rot keep it from reading as a grid. */
+       cursor slows, and six chips heap into one pile. Columns sit .74w apart and
+       rows .7h, so each chip covers about a quarter of its neighbours: a stack
+       of prints pushed across a table, which is the editorial read, rather than
+       six separate tiles. Overlapping only works because the order is fixed —
+       see --z below; the stagger and each chip's own --rot do the rest. */
     var FORM = [
-      [-1.08, -.55], [-.02, -.82], [1.08, -.48],
-      [-1.12, .5], [-.05, .8], [1.1, .45]
+      [-.74, -.38], [-.02, -.58], [.74, -.34],
+      [-.78, .34], [-.03, .56], [.76, .3]
     ];
     var hx = new Float32Array(HIST), hy = new Float32Array(HIST), head = 0, filled = false;
     var ptx = 0, pty = 0, tpx = 0, tpy = 0;
