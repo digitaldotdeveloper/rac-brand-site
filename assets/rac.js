@@ -398,7 +398,9 @@
        The thumbnails drift while the visitor is looking at the picture and
        line up as a control strip once they are done with it: on any scroll,
        or as soon as the pointer drops into the lower band where the dock
-       itself lives. */
+       itself lives. That band is the bottom ~38% of the hero (ny > .12): the
+       dock is a target you reach for, so it has to meet the cursor early
+       rather than make you hunt for the last strip of the stage. */
     var docked = false;
     function dock(on) {
       if (on === docked || !thumbs) return;
@@ -524,7 +526,7 @@
         cols.style.setProperty('--py', Math.round(ny * -12) + 'px');
       }
 
-      if (window.scrollY <= 60) dock(ny > .34);
+      if (window.scrollY <= 60) dock(ny > .12);
 
       if (e.pointerType === 'touch' || docked || !fine.matches) { track(false); return; }
       var lx = e.clientX - r.left, ly = e.clientY - r.top;
