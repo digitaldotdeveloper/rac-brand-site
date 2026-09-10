@@ -418,7 +418,7 @@
        position it returns to. Docked, the trail is off — a dock you are meant
        to pick from has to hold still. */
     var raf = null, tracking = false, hasPointer = false;
-    var STRIDE = 7, HIST = 64, SPREAD = .18, MARGIN = 10;
+    var STRIDE = 7, HIST = 64, SPREAD = .18, MARGIN = 10, LEAD = .1;
     var hx = new Float32Array(HIST), hy = new Float32Array(HIST), head = 0, filled = false;
     var ptx = 0, pty = 0, tpx = 0, tpy = 0;
     /* where each chip actually is, in hero pixels — the sampled point is only
@@ -428,13 +428,22 @@
 
     function rtlX() { return document.documentElement.dir === 'rtl' ? -1 : 1; }
 
-    /* The stage is the whole hero, as in the reference: the chips follow you
-       across the copy as well as the picture. `.ed` is pointer-events:none and
-       sits a layer below `.thumbs`, so they pass over the headline without
-       taking the cursor from it. Inset by a hair so no chip half-leaves. */
+    /* The trail lives over the picture, not over the whole hero: the copy side
+       and the cream gutter between the two are reading space, and chips loitering
+       there have nothing to sit on. The zone is `.cols` with a tenth of its width
+       handed back to the copy — that gutter is part of the picture box but reads
+       as empty page, so the trail should not start until the product does. It is
+       measured off the layout, so it mirrors in Arabic for free; offsetLeft, not
+       a client rect, because `.cols` carries the parallax transform and reading
+       that back would let the boundary chase the cursor. */
     function stageBox() {
       var hr = host.getBoundingClientRect();
-      return { x: MARGIN, y: MARGIN, w: hr.width - MARGIN * 2, h: hr.height - MARGIN * 2 };
+      var c = els[i] && els[i].querySelector('.cols');
+      if (!c) return { x: MARGIN, y: MARGIN, w: hr.width - MARGIN * 2, h: hr.height - MARGIN * 2 };
+      var x = c.offsetLeft, w = c.offsetWidth, cut = w * LEAD;
+      /* the strip comes off whichever side faces the copy */
+      if (rtlX() > 0) x += cut;
+      return { x: x, y: MARGIN, w: w - cut, h: hr.height - MARGIN * 2 };
     }
     function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
 
@@ -526,10 +535,18 @@
         cols.style.setProperty('--py', Math.round(ny * -12) + 'px');
       }
 
-      if (window.scrollY <= 60) dock(ny > .12);
-
-      if (e.pointerType === 'touch' || docked || !fine.matches) { track(false); return; }
+      /* Off the picture — over the copy, or in the gutter between the two — the
+         set docks rather than drifting back to its scatter: the same answer the
+         lower band gives, so the two halves of "not trailing" look like one
+         behaviour instead of two. */
       var lx = e.clientX - r.left, ly = e.clientY - r.top;
+      var zone = stageBox();
+      var inZone = lx >= zone.x && lx <= zone.x + zone.w;
+      if (window.scrollY <= 60) dock(ny > .12 || !inZone);
+
+      if (e.pointerType === 'touch' || docked || !fine.matches) {
+        hasPointer = false; track(false); return;
+      }
       if (!hasPointer) { hasPointer = true; tpx = ptx = lx; tpy = pty = ly; }
       else { tpx = lx; tpy = ly; }
       track(true);
