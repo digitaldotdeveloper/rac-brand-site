@@ -422,12 +422,13 @@
     /* The set holds this shape around the cursor, in chip widths and heights.
        Keeping a share of each chip's scattered rest position instead — which is
        what SPREAD used to do — collapses the moment the scatter is tight or the
-       cursor slows, and six chips heap into one pile. Columns sit 1.25w apart
-       and rows 1.15h, so nothing overlaps at any chip size; the stagger and each
-       chip's own --rot keep it from reading as a grid. */
+       cursor slows, and six chips heap into one pile. Columns sit 1.08w apart
+       and rows 1.05h — just clear of touching at any chip size, so the six read
+       as one cluster rather than a spread-out set; the stagger and each chip's
+       own --rot keep it from reading as a grid. */
     var FORM = [
-      [-1.25, -.62], [-.02, -.95], [1.25, -.55],
-      [-1.3, .55], [-.05, .92], [1.28, .5]
+      [-1.08, -.55], [-.02, -.82], [1.08, -.48],
+      [-1.12, .5], [-.05, .8], [1.1, .45]
     ];
     var hx = new Float32Array(HIST), hy = new Float32Array(HIST), head = 0, filled = false;
     var ptx = 0, pty = 0, tpx = 0, tpy = 0;
