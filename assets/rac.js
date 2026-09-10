@@ -418,7 +418,17 @@
        position it returns to. Docked, the trail is off — a dock you are meant
        to pick from has to hold still. */
     var raf = null, tracking = false, hasPointer = false;
-    var STRIDE = 7, HIST = 64, SPREAD = .18, MARGIN = 10, LEAD = .1;
+    var STRIDE = 7, HIST = 64, MARGIN = 10, LEAD = .1;
+    /* The set holds this shape around the cursor, in chip widths and heights.
+       Keeping a share of each chip's scattered rest position instead — which is
+       what SPREAD used to do — collapses the moment the scatter is tight or the
+       cursor slows, and six chips heap into one pile. Columns sit 1.25w apart
+       and rows 1.15h, so nothing overlaps at any chip size; the stagger and each
+       chip's own --rot keep it from reading as a grid. */
+    var FORM = [
+      [-1.25, -.62], [-.02, -.95], [1.25, -.55],
+      [-1.3, .55], [-.05, .92], [1.28, .5]
+    ];
     var hx = new Float32Array(HIST), hy = new Float32Array(HIST), head = 0, filled = false;
     var ptx = 0, pty = 0, tpx = 0, tpy = 0;
     /* where each chip actually is, in hero pixels — the sampled point is only
@@ -470,16 +480,12 @@
       var box = stageBox();
       var chips = thumbs.querySelectorAll('.thumb');
 
-      /* Riding the trail alone means every chip lands on the cursor the moment
-         it stops and the set piles into one stack, so each keeps a small share
-         of its scattered offset — enough to stay legible when the cursor is
-         still, not enough to stop the set reading as a string. */
-      var cx = 0, cy = 0, rests = [], k;
+      /* Every chip samples a different point of the same path, so a moving
+         cursor strings them out and a still one settles them into FORM. */
+      var rests = [], k;
       for (k = 0; k < chips.length; k++) {
         rests[k] = restOf(chips[k], r.width, r.height, chips[k].offsetWidth);
-        cx += rests[k].x; cy += rests[k].y;
       }
-      cx /= chips.length; cy /= chips.length;
 
       for (var n = 0; n < chips.length; n++) {
         var el = chips[n];
@@ -488,9 +494,9 @@
         if (!filled && back >= head) s = 0;
         var w = el.offsetWidth, h = el.offsetHeight;
         var rest = rests[n];
-        var fanX = (rest.x - cx) * SPREAD, fanY = (rest.y - cy) * SPREAD;
-        var tx = clamp(hx[s] + fanX, box.x + w / 2, box.x + box.w - w / 2);
-        var ty = clamp(hy[s] + fanY, box.y + h / 2, box.y + box.h - h / 2);
+        var f = FORM[n % FORM.length];
+        var tx = clamp(hx[s] + f[0] * w * rtlX(), box.x + w / 2, box.x + box.w - w / 2);
+        var ty = clamp(hy[s] + f[1] * h, box.y + h / 2, box.y + box.h - h / 2);
 
         /* --d is the chip's depth: a near chip (d > 1) chases the sampled point
            hard, a far one drags behind it. The stride strings the set out along
