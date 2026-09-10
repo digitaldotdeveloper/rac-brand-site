@@ -12,7 +12,10 @@
     return '<svg viewBox="' + (vb || '0 0 100 100') + '" fill="none" stroke="currentColor" ' +
       'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
   };
-  var A = '#D8A24A';
+  /* the lit dot on each drawing. A CSS variable in a presentation attribute
+     resolves like any other value, so the drawings follow the theme toggle
+     instead of holding one fixed accent across both grounds. */
+  var A = 'var(--accent,#1B7B7E)';
 
   var ART = {
     fridge: S('<rect x="27" y="8" width="46" height="84" rx="4"/><path d="M27 40h46"/>' +
