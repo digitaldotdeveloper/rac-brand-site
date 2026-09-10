@@ -416,23 +416,23 @@
        position it returns to. Docked, the trail is off — a dock you are meant
        to pick from has to hold still. */
     var raf = null, tracking = false, hasPointer = false;
-    var STRIDE = 5, HIST = 64, SPREAD = .5;
+    var STRIDE = 7, HIST = 64, SPREAD = .18, MARGIN = 10;
     var hx = new Float32Array(HIST), hy = new Float32Array(HIST), head = 0, filled = false;
     var ptx = 0, pty = 0, tpx = 0, tpy = 0;
+    /* where each chip actually is, in hero pixels — the sampled point is only
+       the target it eases toward, at a rate set by its own depth */
+    var curX = [], curY = [], seeded = false;
     var fine = window.matchMedia('(hover:hover) and (pointer:fine)');
 
     function rtlX() { return document.documentElement.dir === 'rtl' ? -1 : 1; }
 
-    /* The trail belongs to the picture, not to the whole hero: the copy side is
-       reading matter and chips dragged across it are just in the way. This is
-       the stage in hero-local pixels — it mirrors with the layout in Arabic
-       because it is measured, not assumed. */
+    /* The stage is the whole hero, as in the reference: the chips follow you
+       across the copy as well as the picture. `.ed` is pointer-events:none and
+       sits a layer below `.thumbs`, so they pass over the headline without
+       taking the cursor from it. Inset by a hair so no chip half-leaves. */
     function stageBox() {
       var hr = host.getBoundingClientRect();
-      var c = els[i] && els[i].querySelector('.cols');
-      if (!c) return { x: 0, y: 0, w: hr.width, h: hr.height };
-      var cr = c.getBoundingClientRect();
-      return { x: cr.left - hr.left, y: cr.top - hr.top, w: cr.width, h: cr.height };
+      return { x: MARGIN, y: MARGIN, w: hr.width - MARGIN * 2, h: hr.height - MARGIN * 2 };
     }
     function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
 
@@ -460,9 +460,9 @@
       var chips = thumbs.querySelectorAll('.thumb');
 
       /* Riding the trail alone means every chip lands on the cursor the moment
-         it stops, and the set piles into one stack. Each keeps a share of its
-         scattered offset from the centre of the constellation, so the group
-         holds its shape while it follows and settles as a loose cluster. */
+         it stops and the set piles into one stack, so each keeps a small share
+         of its scattered offset — enough to stay legible when the cursor is
+         still, not enough to stop the set reading as a string. */
       var cx = 0, cy = 0, rests = [], k;
       for (k = 0; k < chips.length; k++) {
         rests[k] = restOf(chips[k], r.width, r.height, chips[k].offsetWidth);
@@ -478,11 +478,22 @@
         var w = el.offsetWidth, h = el.offsetHeight;
         var rest = rests[n];
         var fanX = (rest.x - cx) * SPREAD, fanY = (rest.y - cy) * SPREAD;
-        var tx = clamp(hx[s] + fanX, box.x + w / 2, box.x + box.w - w / 2) - w / 2;
-        var ty = clamp(hy[s] + fanY, box.y + h / 2, box.y + box.h - h / 2) - h / 2;
-        el.style.setProperty('--tx', (tx - rest.x).toFixed(1) + 'px');
-        el.style.setProperty('--ty', (ty - rest.y).toFixed(1) + 'px');
+        var tx = clamp(hx[s] + fanX, box.x + w / 2, box.x + box.w - w / 2);
+        var ty = clamp(hy[s] + fanY, box.y + h / 2, box.y + box.h - h / 2);
+
+        /* --d is the chip's depth: a near chip (d > 1) chases the sampled point
+           hard, a far one drags behind it. The stride strings the set out along
+           the path; this is what gives the string its front-to-back weight. */
+        var d = parseFloat(getComputedStyle(el).getPropertyValue('--d')) || 1;
+        if (!seeded) { curX[n] = rest.x + w / 2; curY[n] = rest.y + h / 2; }
+        var ease = clamp(.06 + d * .09, .05, .3);
+        curX[n] += (tx - curX[n]) * ease;
+        curY[n] += (ty - curY[n]) * ease;
+
+        el.style.setProperty('--tx', (curX[n] - w / 2 - rest.x).toFixed(1) + 'px');
+        el.style.setProperty('--ty', (curY[n] - h / 2 - rest.y).toFixed(1) + 'px');
       }
+      seeded = true;
       raf = requestAnimationFrame(loop);
     }
 
@@ -490,7 +501,7 @@
       if (on === tracking || !thumbs) return;
       tracking = on;
       thumbs.classList.toggle('is-tracking', on);
-      if (on) { if (!raf) raf = requestAnimationFrame(loop); return; }
+      if (on) { seeded = false; if (!raf) raf = requestAnimationFrame(loop); return; }
       /* let the CSS transition carry them home rather than snapping */
       var chips = thumbs.querySelectorAll('.thumb');
       for (var n = 0; n < chips.length; n++) {
@@ -513,14 +524,10 @@
         cols.style.setProperty('--py', Math.round(ny * -12) + 'px');
       }
 
-      if (window.scrollY <= 60) dock(ny > .22);
+      if (window.scrollY <= 60) dock(ny > .34);
 
       if (e.pointerType === 'touch' || docked || !fine.matches) { track(false); return; }
       var lx = e.clientX - r.left, ly = e.clientY - r.top;
-      var box = stageBox();
-      if (lx < box.x || lx > box.x + box.w || ly < box.y || ly > box.y + box.h) {
-        hasPointer = false; track(false); return;
-      }
       if (!hasPointer) { hasPointer = true; tpx = ptx = lx; tpy = pty = ly; }
       else { tpx = lx; tpy = ly; }
       track(true);
